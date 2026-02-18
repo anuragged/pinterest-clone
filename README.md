@@ -111,17 +111,11 @@ This approach is deterministic and safe for demos; production can replace it wit
 
 --
 
-## 5-minute demo (iOS) — Placeholder
+## 5-minute demo (iOS Simulator) — GDrive Link:
 
-This README intentionally omits the full 5-minute demo script. Insert the iOS demo script here when ready.
+https://drive.google.com/file/d/1032qZCEjz295DfH7-Ek3_YxgcBfSfAVJ/view?usp=sharing
 
 APK / iOS build link:
 
-- APK: <APK_LINK_HERE>
-
-Replace `<APK_LINK_HERE>` with a hosted APK or artifact link (e.g., GitHub release URL or S3 signed URL).
-
---
-
-If you want, I can push this README update to GitHub now (I will commit and push the file), or adjust the placeholder text and APK link you provide.
+https://drive.google.com/file/d/1WA4btztyJwgU3mMIxXEuMxICt2wG6jWz/view?usp=sharing
 
