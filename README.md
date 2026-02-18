@@ -2,7 +2,7 @@
 # anurag_pinterest — Pinterest Clone
 
 
-## 5-minute demo (iOS Simulator) — GDrive Link:
+# 5-minute demo (iOS Simulator) — GDrive Link:
 
 https://drive.google.com/file/d/1032qZCEjz295DfH7-Ek3_YxgcBfSfAVJ/view?usp=sharing
 
