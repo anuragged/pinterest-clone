@@ -6,7 +6,7 @@
 
 https://drive.google.com/file/d/1032qZCEjz295DfH7-Ek3_YxgcBfSfAVJ/view?usp=sharing
 
-APK / iOS build link:
+APK build link:
 
 https://drive.google.com/file/d/1WA4btztyJwgU3mMIxXEuMxICt2wG6jWz/view?usp=sharing
 
