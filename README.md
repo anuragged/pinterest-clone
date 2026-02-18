@@ -1,6 +1,15 @@
 
 # anurag_pinterest — Pinterest Clone
 
+
+## 5-minute demo (iOS Simulator) — GDrive Link:
+
+https://drive.google.com/file/d/1032qZCEjz295DfH7-Ek3_YxgcBfSfAVJ/view?usp=sharing
+
+APK / iOS build link:
+
+https://drive.google.com/file/d/1WA4btztyJwgU3mMIxXEuMxICt2wG6jWz/view?usp=sharing
+
 Pinterest Clone — Image Discovery Platform is a Flutter-based, cross-platform app that reproduces the core Pinterest experience: a masonry image feed, pin detail pages, search, creation flow, notifications, and profile/boards.
 
 This README documents the tech stack, architecture, API wiring, image-loading strategy, ranking logic, and developer notes. A placeholder for a 5-minute iOS demo script and an APK link is provided below.
@@ -108,14 +117,4 @@ This approach is deterministic and safe for demos; production can replace it wit
 - For persistence, consider Hive/SQLite or server-side storage to persist saved pins and preferences.
 - To improve recommendations, add embeddings + nearest-neighbor search or a server-side ranking API.
 - Add CI (GitHub Actions) to run `flutter analyze` and `flutter test` on PRs.
-
---
-
-## 5-minute demo (iOS Simulator) — GDrive Link:
-
-https://drive.google.com/file/d/1032qZCEjz295DfH7-Ek3_YxgcBfSfAVJ/view?usp=sharing
-
-APK / iOS build link:
-
-https://drive.google.com/file/d/1WA4btztyJwgU3mMIxXEuMxICt2wG6jWz/view?usp=sharing
 
