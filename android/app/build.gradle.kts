@@ -8,7 +8,9 @@ plugins {
 android {
     namespace = "com.example.anurag_pinterest"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+    // Use a concrete NDK version compatible with several plugins
+    // See project build output recommending 27.0.12077973
+    ndkVersion = "27.0.12077973"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/colors.dart';
+import '../../../core/utils/haptics.dart';
 import '../../providers/auth_provider.dart';
 import 'package:go_router/go_router.dart';
 
