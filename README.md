@@ -2,7 +2,7 @@
 # anurag_pinterest — Pinterest Clone
 
 
-### Demo Video Walkthrough (iOS Simulator) — GDrive Link:
+### App Walkthrough Video (iOS Simulator) — GDrive Link:
 
 https://drive.google.com/file/d/1032qZCEjz295DfH7-Ek3_YxgcBfSfAVJ/view?usp=sharing
 
