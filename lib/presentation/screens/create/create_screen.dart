@@ -5,6 +5,9 @@ import '../../../core/constants/dimensions.dart';
 import '../../../core/utils/haptics.dart';
 import '../../providers/board_provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/discovery_provider.dart';
+import '../../../domain/entities/pin.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 /// Create screen — matching Figma design.
 /// Shows creation menu (Pin, Board, Idea Pin) with photo picker grid.
@@ -18,28 +21,15 @@ class CreateScreen extends ConsumerStatefulWidget {
 class _CreateScreenState extends ConsumerState<CreateScreen> {
   bool _showPhotoGrid = false;
 
-  // Dummy photo grid images
-  static const _photoImages = [
-    'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=300',
-    'https://images.pexels.com/photos/1005644/pexels-photo-1005644.jpeg?auto=compress&cs=tinysrgb&w=300',
-    'https://images.pexels.com/photos/1536619/pexels-photo-1536619.jpeg?auto=compress&cs=tinysrgb&w=300',
-    'https://images.pexels.com/photos/842711/pexels-photo-842711.jpeg?auto=compress&cs=tinysrgb&w=300',
-    'https://images.pexels.com/photos/1183266/pexels-photo-1183266.jpeg?auto=compress&cs=tinysrgb&w=300',
-    'https://images.pexels.com/photos/1998479/pexels-photo-1998479.jpeg?auto=compress&cs=tinysrgb&w=300',
-    'https://images.pexels.com/photos/2662116/pexels-photo-2662116.jpeg?auto=compress&cs=tinysrgb&w=300',
-    'https://images.pexels.com/photos/1132047/pexels-photo-1132047.jpeg?auto=compress&cs=tinysrgb&w=300',
-    'https://images.pexels.com/photos/1108099/pexels-photo-1108099.jpeg?auto=compress&cs=tinysrgb&w=300',
-    'https://images.pexels.com/photos/1172253/pexels-photo-1172253.jpeg?auto=compress&cs=tinysrgb&w=300',
-    'https://images.pexels.com/photos/3225517/pexels-photo-3225517.jpeg?auto=compress&cs=tinysrgb&w=300',
-    'https://images.pexels.com/photos/2325446/pexels-photo-2325446.jpeg?auto=compress&cs=tinysrgb&w=300',
-  ];
+  // Placeholder list removed, will use discoveryState.creatorIdeas
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
+    final discoveryState = ref.watch(discoveryProvider);
     if (_showPhotoGrid) {
-      return _buildPhotoPickerScreen(isDark);
+      return _buildPhotoPickerScreen(isDark, discoveryState.creatorIdeas);
     }
 
     return Scaffold(
@@ -131,7 +121,7 @@ class _CreateScreenState extends ConsumerState<CreateScreen> {
     );
   }
 
-  Widget _buildPhotoPickerScreen(bool isDark) {
+  Widget _buildPhotoPickerScreen(bool isDark, List<Pin> photos) {
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
@@ -140,8 +130,8 @@ class _CreateScreenState extends ConsumerState<CreateScreen> {
         leading: IconButton(
           onPressed: () => setState(() => _showPhotoGrid = false),
           icon: Icon(
-            Icons.arrow_back_ios,
-            size: 20,
+            Icons.chevron_left,
+            size: 32,
             color: isDark ? Colors.white : PinColors.textPrimary,
           ),
         ),
@@ -174,17 +164,18 @@ class _CreateScreenState extends ConsumerState<CreateScreen> {
           mainAxisSpacing: 2,
           crossAxisSpacing: 2,
         ),
-        itemCount: _photoImages.length,
+        itemCount: photos.length,
         itemBuilder: (context, index) {
+          final pin = photos[index];
           return GestureDetector(
             onTap: () {
               Haptics.light();
-              _showPinEditorSheet(index);
+              _showPinEditorSheet(pin);
             },
-            child: Image.network(
-              _photoImages[index],
+            child: CachedNetworkImage(
+              imageUrl: pin.thumbnailUrl,
               fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => Container(
+              errorWidget: (context, url, error) => Container(
                 color: PinColors.shimmerBase,
               ),
             ),
@@ -194,7 +185,7 @@ class _CreateScreenState extends ConsumerState<CreateScreen> {
     );
   }
 
-  void _showPinEditorSheet(int imageIndex) {
+  void _showPinEditorSheet(Pin pin) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     showModalBottomSheet(
       context: context,
@@ -229,12 +220,12 @@ class _CreateScreenState extends ConsumerState<CreateScreen> {
                   ),
                 ),
                 const SizedBox(height: 20),
-
+ 
                 // Image preview
                 ClipRRect(
                   borderRadius: BorderRadius.circular(16),
-                  child: Image.network(
-                    _photoImages[imageIndex],
+                  child: CachedNetworkImage(
+                    imageUrl: pin.imageUrl,
                     height: 250,
                     width: double.infinity,
                     fit: BoxFit.cover,

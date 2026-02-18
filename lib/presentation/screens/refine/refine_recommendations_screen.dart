@@ -33,7 +33,7 @@ class _RefineRecommendationsScreenState extends ConsumerState<RefineRecommendati
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, size: 20),
+          icon: const Icon(Icons.chevron_left, size: 32),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: const Text(

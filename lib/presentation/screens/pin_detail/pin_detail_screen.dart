@@ -112,7 +112,7 @@ class _PinDetailScreenState extends ConsumerState<PinDetailScreen> {
             child: Center(
               child: PinActionButton(
                 icon: Icons.chevron_left,
-                iconSize: 28,
+                iconSize: 32,
                 onTap: () => context.pop(),
               ),
             ),

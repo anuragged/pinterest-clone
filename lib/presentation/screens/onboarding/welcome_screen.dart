@@ -5,6 +5,9 @@ import '../../../core/constants/colors.dart';
 import '../../../core/constants/dimensions.dart';
 import '../../../core/utils/haptics.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/discovery_provider.dart';
+import '../../../domain/entities/pin.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 /// Welcome/Landing screen matching Figma design exactly.
 /// Features masonry image grid background, Pinterest logo image, and sign-up/login buttons.
@@ -20,19 +23,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
 
-  // Masonry background images (curated to match Figma vibe)
-  static const _bgImages = [
-    'https://images.pexels.com/photos/256150/pexels-photo-256150.jpeg?auto=compress&cs=tinysrgb&w=300', // Book/Lemons feel
-    'https://images.pexels.com/photos/2662116/pexels-photo-2662116.jpeg?auto=compress&cs=tinysrgb&w=300', // Nature
-    'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=300', // Food
-    'https://images.pexels.com/photos/842711/pexels-photo-842711.jpeg?auto=compress&cs=tinysrgb&w=300', // Yoga/Sunset
-    'https://images.pexels.com/photos/1571460/pexels-photo-1571460.jpeg?auto=compress&cs=tinysrgb&w=300', // Interior
-    'https://images.pexels.com/photos/1229861/pexels-photo-1229861.jpeg?auto=compress&cs=tinysrgb&w=300', // Architecture
-    'https://images.pexels.com/photos/1536619/pexels-photo-1536619.jpeg?auto=compress&cs=tinysrgb&w=300', // Fashion
-    'https://images.pexels.com/photos/1183266/pexels-photo-1183266.jpeg?auto=compress&cs=tinysrgb&w=300', // Lifestyle
-    'https://images.pexels.com/photos/1108099/pexels-photo-1108099.jpeg?auto=compress&cs=tinysrgb&w=300', // Animals
-    'https://images.pexels.com/photos/1132047/pexels-photo-1132047.jpeg?auto=compress&cs=tinysrgb&w=300', // Travel
-  ];
+  // No longer using hardcoded _bgImages
 
   @override
   void initState() {
@@ -46,6 +37,10 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
       curve: Curves.easeIn,
     );
     _fadeController.forward();
+    
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(discoveryProvider.notifier).loadDiscovery();
+    });
   }
 
   @override
@@ -56,6 +51,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
 
   @override
   Widget build(BuildContext context) {
+    final discoveryState = ref.watch(discoveryProvider);
     final size = MediaQuery.of(context).size;
     
     return Scaffold(
@@ -68,7 +64,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
             left: 0,
             right: 0,
             height: size.height * 0.65,
-            child: _buildMasonryBackground(),
+            child: _buildMasonryBackground(discoveryState.todayInspiration),
           ),
 
           // ── Gradient Overlay to White ──
@@ -235,44 +231,51 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
     );
   }
 
-  Widget _buildMasonryBackground() {
+  Widget _buildMasonryBackground(List<Pin> images) {
+    if (images.isEmpty) return Container(color: Colors.white);
     return Transform.scale(
       scale: 1.1, // Slightly oversized to hide edges
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildColumn(0, [0, 1, 2]),
-          _buildColumn(12, [3, 4, 5, 6]),
-          _buildColumn(0, [7, 8, 9]),
+          _buildColumn(0, [0, 1, 2], images),
+          _buildColumn(12, [3, 4, 5, 6], images),
+          _buildColumn(0, [2, 4, 0], images), // Reuse some if needed
         ],
       ),
     );
   }
 
-  Widget _buildColumn(double topPadding, List<int> imageIndices) {
+  Widget _buildColumn(double topPadding, List<int> imageIndices, List<Pin> images) {
     return Expanded(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 5),
-        child: Column(
-          children: [
-            SizedBox(height: topPadding),
-            ...imageIndices.map((index) {
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(24),
-                  child: Image.network(
-                    _bgImages[index],
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(
-                      height: 200,
-                      color: PinColors.shimmerBase,
+        child: OverflowBox(
+          alignment: Alignment.topCenter,
+          maxHeight: double.infinity,
+          child: Column(
+            children: [
+              SizedBox(height: topPadding),
+              ...imageIndices.map((index) {
+                if (index >= images.length) return const SizedBox.shrink();
+                final pin = images[index];
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(24),
+                    child: CachedNetworkImage(
+                      imageUrl: pin.thumbnailUrl,
+                      fit: BoxFit.cover,
+                      errorWidget: (context, url, error) => Container(
+                        height: 200,
+                        color: PinColors.shimmerBase,
+                      ),
                     ),
                   ),
-                ),
-              );
-            }),
-          ],
+                );
+              }),
+            ],
+          ),
         ),
       ),
     );

@@ -26,9 +26,9 @@ class ChatScreen extends ConsumerWidget {
         elevation: 0,
         leading: IconButton(
           icon: Icon(
-            Icons.arrow_back_ios_rounded,
+            Icons.chevron_left,
             color: isDark ? Colors.white : PinColors.textPrimary,
-            size: 20,
+            size: 32,
           ),
           onPressed: () => context.pop(),
         ),

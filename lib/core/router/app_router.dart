@@ -7,10 +7,10 @@ import '../../presentation/screens/search/search_screen.dart';
 import '../../presentation/screens/create/create_screen.dart';
 import '../../presentation/screens/notifications/notifications_screen.dart';
 import '../../presentation/screens/profile/profile_screen.dart';
+import '../../presentation/screens/profile/user_profile_detail_screen.dart';
 import '../../presentation/screens/pin_detail/pin_detail_screen.dart';
 import '../../presentation/screens/board_detail/board_detail_screen.dart';
 import '../../presentation/screens/refine/refine_recommendations_screen.dart';
-import '../../presentation/screens/profile/settings_screen.dart';
 import '../../presentation/screens/onboarding/welcome_screen.dart';
 import '../../presentation/screens/onboarding/signup_screen.dart';
 import '../../presentation/screens/search/today_inspiration_screen.dart';
@@ -42,7 +42,7 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: '/settings',
       pageBuilder: (context, state) => const CustomTransitionPage(
-        child: SettingsScreen(),
+        child: ProfileScreen(),
         transitionsBuilder: _slideUpTransition,
       ),
     ),
@@ -198,6 +198,14 @@ final GoRouter appRouter = GoRouter(
           transitionsBuilder: _slideUpTransition,
         );
       },
+    ),
+    // ── User Profile Detail (Boards & Pins) ──
+    GoRoute(
+      path: '/profile/details',
+      pageBuilder: (context, state) => const CustomTransitionPage(
+        child: UserProfileDetailScreen(),
+        transitionsBuilder: _slideUpTransition,
+      ),
     ),
   ],
 );

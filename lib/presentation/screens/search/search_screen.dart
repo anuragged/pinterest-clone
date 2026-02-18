@@ -14,6 +14,9 @@ import '../../providers/board_provider.dart';
 import '../../widgets/pin_card.dart';
 import '../../widgets/shimmer_grid.dart';
 import '../../widgets/category_chip.dart';
+import '../../providers/discovery_provider.dart';
+import '../../../domain/entities/pin.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 /// Search & Discovery screen.
 /// Instant suggestions, live results, cached history, category chips.
@@ -33,50 +36,6 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
   Timer? _autoScrollTimer;
   int _currentPage = 0;
 
-  final List<Map<String, String>> _inspirationItems = [
-    {
-      'subtitle': 'Go for it',
-      'title': 'Quotes to recharge your motivation',
-      'image': 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&q=80',
-      'overlayText': 'BAD DAYS ARE TEMPORARY',
-    },
-    {
-      'subtitle': 'Healthy & Sweet',
-      'title': 'Time to try banana sushi',
-      'image': 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&q=80',
-      'overlayText': 'YUMMY DESSERTS',
-    },
-    {
-      'subtitle': 'Curated for you',
-      'title': 'Your weekend guide to relaxing interiors',
-      'image': 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&q=80',
-      'overlayText': 'COZY HOMES',
-    },
-    {
-      'subtitle': 'Style Guide',
-      'title': 'Level up your office attire',
-      'image': 'https://images.unsplash.com/photo-1497215728101-856f4ea42174?auto=format&fit=crop&q=80',
-      'overlayText': 'OFFICE STYLE',
-    },
-    {
-      'subtitle': 'Winter Escape',
-      'title': 'Cozy cabin mood boards',
-      'image': 'https://images.unsplash.com/photo-1496307653780-42ee777d4838?auto=format&fit=crop&q=80',
-      'overlayText': 'CABIN VIBES',
-    },
-    {
-      'subtitle': 'Routine Refresh',
-      'title': 'Morning routines for productivity',
-      'image': 'https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&q=80',
-      'overlayText': 'START FRESH',
-    },
-    {
-      'subtitle': 'Green Living',
-      'title': 'Aesthetic plants for small spaces',
-      'image': 'https://images.unsplash.com/photo-1485955900006-10f4d324d411?auto=format&fit=crop&q=80',
-      'overlayText': 'PLANT PARENT',
-    },
-  ];
 
   @override
   bool get wantKeepAlive => true;
@@ -88,6 +47,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(searchProvider.notifier).initialize();
+      ref.read(discoveryProvider.notifier).loadDiscovery();
     });
 
 
@@ -139,6 +99,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
   Widget build(BuildContext context) {
     super.build(context);
     final searchState = ref.watch(searchProvider);
+    final discoveryState = ref.watch(discoveryProvider);
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -152,16 +113,14 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
             Expanded(
               child: PinterestRefreshIndicator(
                 onRefresh: () async {
-                  setState(() {
-                    _inspirationItems.shuffle();
-                  });
+                  await ref.read(discoveryProvider.notifier).loadDiscovery();
                   await ref.read(searchProvider.notifier).refresh();
                 },
                 child: searchState.isSearching
                     ? _buildSuggestionsAndHistory(searchState)
                     : searchState.results.isNotEmpty
                         ? _buildResults(searchState)
-                        : _buildDiscovery(searchState),
+                        : _buildDiscovery(searchState, discoveryState),
               ),
             ),
           ],
@@ -307,7 +266,11 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
     );
   }
 
-  Widget _buildDiscovery(SearchState searchState) {
+  Widget _buildDiscovery(SearchState searchState, DiscoveryState discoveryState) {
+    if (discoveryState.isLoading && discoveryState.ideasForYou.isEmpty) {
+      return const Center(child: CircularProgressIndicator(color: PinColors.pinterestRed));
+    }
+
     return SingleChildScrollView(
       physics: const AlwaysScrollableScrollPhysics(
         parent: BouncingScrollPhysics(),
@@ -318,13 +281,13 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
         children: [
           // ── Ideas for you (Grid) ──
           _buildDiscoveryHeader('Ideas for you'),
-          _buildIdeasForYouGrid(),
+          _buildIdeasForYouGrid(discoveryState.ideasForYou),
 
           const SizedBox(height: 32),
 
           // ── Today's Inspiration (Carousel) ──
           _buildDiscoveryHeader('Today\'s Inspiration'),
-          _buildTodayInspirationCarousel(),
+          _buildTodayInspirationCarousel(discoveryState.todayInspiration),
 
           const SizedBox(height: 32),
 
@@ -341,27 +304,28 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
               ),
             ),
           ),
-          _buildExploreFeaturedBoards(),
+          _buildExploreFeaturedBoards(discoveryState.featuredBoards),
 
           const SizedBox(height: 32),
 
           // ── Ideas from creators (Horizontal List) ──
           _buildDiscoveryHeader('Ideas from creators'),
-          _buildIdeasFromCreators(),
+          _buildIdeasFromCreators(discoveryState.creatorIdeas),
 
           const SizedBox(height: 32),
 
           // ── Shopping spotlight ──
           _buildDiscoveryHeader('Shopping spotlight'),
-          _buildSpotlightCard(
-            'The take-care-of-yourself edit',
-            'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&q=80',
-          ),
+          if (discoveryState.spotlight.isNotEmpty)
+            _buildSpotlightCard(
+              'The take-care-of-yourself edit',
+              discoveryState.spotlight.first.imageUrl,
+            ),
 
           const SizedBox(height: 48),
 
           // ── Popular on Pinterest ──
-          _buildPopularOnPinterest(),
+          _buildPopularOnPinterest(discoveryState.popularTopics),
         ],
       ),
     );
@@ -381,14 +345,14 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
     );
   }
 
-  Widget _buildIdeasForYouGrid() {
-    final List<Map<String, String>> categories = [
-      {'name': 'Interior design', 'image': 'https://images.unsplash.com/photo-1616489953149-75ec07aa2221?auto=format&fit=crop&q=80'},
-      {'name': 'Outfit ideas', 'image': 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&q=80'},
-      {'name': 'Cooking recipes', 'image': 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&q=80'},
-      {'name': 'Art inspiration', 'image': 'https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?auto=format&fit=crop&q=80'},
-      {'name': 'Travel destinations', 'image': 'https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?auto=format&fit=crop&q=80'},
-      {'name': 'DIY projects', 'image': 'https://images.unsplash.com/photo-1513519245088-0e12902e5a38?auto=format&fit=crop&q=80'},
+  Widget _buildIdeasForYouGrid(List<Pin> ideas) {
+    final List<String> categories = [
+      'Interior design',
+      'Outfit ideas',
+      'Cooking recipes',
+      'Art inspiration',
+      'Travel destinations',
+      'DIY projects',
     ];
 
     return Padding(
@@ -402,27 +366,28 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
           crossAxisSpacing: 8,
           childAspectRatio: 1.8,
         ),
-        itemCount: categories.length,
+        itemCount: categories.length.clamp(0, ideas.length),
         itemBuilder: (context, index) {
-          final cat = categories[index];
+          final catName = categories[index];
+          final imgUrl = ideas[index].thumbnailUrl;
           return GestureDetector(
             onTap: () {
               Haptics.light();
-              _textController.text = cat['name']!;
-              _onSearch(cat['name']!);
+              _textController.text = catName;
+              _onSearch(catName);
             },
             child: ClipRRect(
               borderRadius: BorderRadius.circular(16),
               child: Stack(
                 children: [
-                  Image.network(
-                    cat['image']!,
+                  CachedNetworkImage(
+                    imageUrl: imgUrl,
                     width: double.infinity,
                     height: double.infinity,
                     fit: BoxFit.cover,
                   ),
                   Container(
-                    decoration: BoxDecoration(
+                    decoration: const BoxDecoration(
                       gradient: LinearGradient(
                         colors: [Colors.black54, Colors.transparent],
                         begin: Alignment.bottomCenter,
@@ -432,7 +397,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
                   ),
                   Center(
                     child: Text(
-                      cat['name']!,
+                      catName,
                       textAlign: TextAlign.center,
                       style: const TextStyle(
                         color: Colors.white,
@@ -451,15 +416,16 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
     );
   }
 
-  Widget _buildTodayInspirationCarousel() {
+  Widget _buildTodayInspirationCarousel(List<Pin> inspiration) {
+    if (inspiration.isEmpty) return const SizedBox.shrink();
     return SizedBox(
       height: 480,
       child: PageView.builder(
-        itemCount: _inspirationItems.length,
+        itemCount: inspiration.length,
         controller: _pageController,
         onPageChanged: (idx) => _currentPage = idx,
         itemBuilder: (context, index) {
-          final item = _inspirationItems[index];
+          final pin = inspiration[index];
           return Padding(
             padding: const EdgeInsets.symmetric(horizontal: 6),
             child: GestureDetector(
@@ -472,8 +438,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
-                    Image.network(
-                      item['image']!,
+                    CachedNetworkImage(
+                      imageUrl: pin.imageUrl,
                       fit: BoxFit.cover,
                     ),
                     Positioned.fill(
@@ -492,10 +458,10 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
                       ),
                     ),
                     // Centered Overlay Text (Figma style)
-                    if (item['overlayText'] != null)
+                    if (pin.title != null)
                       Center(
                         child: Text(
-                          item['overlayText']!,
+                          pin.title!.toUpperCase(),
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             color: Colors.white,
@@ -504,7 +470,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
                             fontFamily: 'Courier', // For that handwritten/stylized look
                             letterSpacing: 2.0,
                             shadows: [
-                               Shadow(
+                               BoxShadow(
                                   color: Colors.black45,
                                   blurRadius: 10,
                                   offset: const Offset(0, 4),
@@ -545,7 +511,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            item['subtitle']!,
+                            pin.photographerName,
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 13,
@@ -554,7 +520,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            item['title']!,
+                            pin.title ?? 'Aesthetic Pin',
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 28,
@@ -574,7 +540,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
                        child: Row(
                          mainAxisAlignment: MainAxisAlignment.center,
                          children: List.generate(
-                           _inspirationItems.length,
+                           inspiration.length,
                            (i) => Container(
                              margin: const EdgeInsets.symmetric(horizontal: 3),
                              width: 6,
@@ -597,15 +563,17 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
     );
   }
 
-  Widget _buildIdeasFromCreators() {
+  Widget _buildIdeasFromCreators(List<Pin> creators) {
+    if (creators.isEmpty) return const SizedBox.shrink();
     return SizedBox(
       height: 240,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: 5,
+        itemCount: creators.length,
         separatorBuilder: (_, __) => const SizedBox(width: 14),
         itemBuilder: (context, index) {
+          final pin = creators[index];
           return Column(
             children: [
               Stack(
@@ -617,7 +585,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(20),
                       image: DecorationImage(
-                        image: NetworkImage('https://picsum.photos/seed/${index + 100}/300/400'),
+                        image: CachedNetworkImageProvider(pin.imageUrl),
                         fit: BoxFit.cover,
                       ),
                     ),
@@ -635,7 +603,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
                         ),
                         child: CircleAvatar(
                           radius: 18,
-                          backgroundImage: NetworkImage('https://i.pravatar.cc/100?u=$index'),
+                          backgroundImage: NetworkImage('https://i.pravatar.cc/100?u=${pin.photographerId}'),
                         ),
                       ),
                     ),
@@ -643,9 +611,9 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
                 ],
               ),
               const SizedBox(height: 18),
-              const Text(
-                'Creator Name',
-                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+              Text(
+                pin.photographerName,
+                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
               ),
             ],
           );
@@ -716,39 +684,18 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
     );
   }
 
-  Widget _buildPopularOnPinterest() {
+  Widget _buildPopularOnPinterest(Map<String, List<Pin>> popularTopics) {
+    if (popularTopics.isEmpty) return const SizedBox.shrink();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildDiscoveryHeader('Popular on Pinterest'),
-        _buildPopularTopicSection('Holi video', [
-          'https://images.unsplash.com/photo-1540544660406-6a69dacb2804?auto=format&fit=crop&q=80',
-          'https://images.unsplash.com/photo-1563294371-bd38fa79222b?auto=format&fit=crop&q=80',
-          'https://images.unsplash.com/photo-1470509037663-253afd7f0f51?auto=format&fit=crop&q=80',
-          'https://images.unsplash.com/photo-1490730141103-6cac27aaab94?auto=format&fit=crop&q=80',
-        ]),
-        const SizedBox(height: 40),
-        _buildPopularTopicSection('Easy drawings', [
-          'https://images.unsplash.com/photo-1513364776144-60967b0f800f?auto=format&fit=crop&q=80',
-          'https://images.unsplash.com/photo-1547826039-bfc35e0f1ea8?auto=format&fit=crop&q=80',
-          'https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?auto=format&fit=crop&q=80',
-          'https://images.unsplash.com/photo-1582201942988-13e60e4556ee?auto=format&fit=crop&q=80',
-        ]),
-        const SizedBox(height: 40),
-        _buildPopularTopicSection('Birthday cake', [
-          'https://images.unsplash.com/photo-1578985545062-69928b1d9587?auto=format&fit=crop&q=80',
-          'https://images.unsplash.com/photo-1588195538326-c5b1e9f80a1b?auto=format&fit=crop&q=80',
-          'https://images.unsplash.com/photo-1535141192574-5d4897c12636?auto=format&fit=crop&q=80',
-          'https://images.unsplash.com/photo-1464349095431-e9a21285b5f3?auto=format&fit=crop&q=80',
-        ]),
-        const SizedBox(height: 40),
-        _buildPopularTopicSection('Matching pfp', [
-          'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&q=80',
-          'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80',
-          'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80',
-          'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80',
-        ]),
-      ],
+      children: popularTopics.entries.map((entry) {
+        return Column(
+           children: [
+             _buildPopularTopicSection(entry.key, entry.value.map((p) => p.thumbnailUrl).toList()),
+             const SizedBox(height: 40),
+           ],
+        );
+      }).toList(),
     );
   }
 
@@ -801,58 +748,48 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
     );
   }
 
-  Widget _buildExploreFeaturedBoards() {
+  Widget _buildExploreFeaturedBoards(List<Pin> boards) {
+    if (boards.isEmpty) return const SizedBox.shrink();
     return SizedBox(
       height: 260,
       child: ListView.separated(
         padding: const EdgeInsets.symmetric(horizontal: 16),
         scrollDirection: Axis.horizontal,
-        itemCount: 4,
+        itemCount: boards.length,
         separatorBuilder: (_, __) => const SizedBox(width: 16),
         itemBuilder: (context, index) {
-          return _buildBoardPreviewCard(index);
+          final pin = boards[index];
+          // Use the pin for the main image and placeholders for others
+          return _buildBoardPreviewCard(index, pin);
         },
       ),
     );
   }
 
-  Widget _buildBoardPreviewCard(int index) {
-    final List<Map<String, String>> boards = [
+  Widget _buildBoardPreviewCard(int index, Pin pin) {
+    final List<Map<String, String>> boardsData = [
       {
         'title': 'Vamp Romantic 🦇',
-        'creator': 'Nessa Barrett ✅ + 2',
-        'pins': '54 Pins · 4d',
-        'mainImage': 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80',
-        'sideImage1': 'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?auto=format&fit=crop&q=80',
-        'sideImage2': 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80',
+        'creator': 'Creator ✅',
       },
       {
         'title': 'DIY birthday greetings',
         'creator': 'Collages ✅',
-        'pins': '49 Pins · 6mo',
-        'mainImage': 'https://images.unsplash.com/photo-1530103043960-ef38714abb15?auto=format&fit=crop&q=80',
-        'sideImage1': 'https://images.unsplash.com/photo-1513201099705-a9746e1e201f?auto=format&fit=crop&q=80',
-        'sideImage2': 'https://images.unsplash.com/photo-1454944338482-a69bb95894af?auto=format&fit=crop&q=80',
       },
       {
         'title': 'Interior Design',
         'creator': 'HomeStyle',
-        'pins': '120 Pins · 1d',
-        'mainImage': 'https://images.unsplash.com/photo-1616489953149-75ec07aa2221?auto=format&fit=crop&q=80',
-        'sideImage1': 'https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&q=80',
-        'sideImage2': 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?auto=format&fit=crop&q=80',
       },
       {
         'title': 'Aesthetic Art',
         'creator': 'ArtistHub',
-        'pins': '30 Pins · 1w',
-        'mainImage': 'https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?auto=format&fit=crop&q=80',
-        'sideImage1': 'https://images.unsplash.com/photo-1547826039-bfc35e0f1ea8?auto=format&fit=crop&q=80',
-        'sideImage2': 'https://images.unsplash.com/photo-1513364776144-60967b0f800f?auto=format&fit=crop&q=80',
       },
     ];
 
-    final board = boards[index % boards.length];
+    final board = boardsData[index % boardsData.length];
+    final imageUrl = pin.thumbnailUrl;
+    final sideImage1 = pin.imageUrl;
+    final sideImage2 = pin.mediumUrl ?? pin.imageUrl;
 
     return Container(
       width: 200,
@@ -868,8 +805,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
               children: [
                 Expanded(
                   flex: 2,
-                  child: Image.network(
-                    board['mainImage']!,
+                  child: CachedNetworkImage(
+                    imageUrl: imageUrl,
                     height: 160,
                     fit: BoxFit.cover,
                   ),
@@ -878,15 +815,15 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
                 Expanded(
                   child: Column(
                     children: [
-                      Image.network(
-                        board['sideImage1']!,
+                      CachedNetworkImage(
+                        imageUrl: sideImage1,
                         height: 79,
                         width: double.infinity,
                         fit: BoxFit.cover,
                       ),
                       const SizedBox(height: 2),
-                      Image.network(
-                        board['sideImage2']!,
+                      CachedNetworkImage(
+                        imageUrl: sideImage2,
                         height: 79,
                         width: double.infinity,
                         fit: BoxFit.cover,
@@ -926,9 +863,9 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
             ],
           ),
           const SizedBox(height: 2),
-          Text(
-            board['pins']!,
-            style: const TextStyle(
+          const Text(
+            '50+ Pins',
+            style: TextStyle(
               fontSize: 10,
               color: Colors.white60,
             ),

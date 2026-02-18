@@ -2,12 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/colors.dart';
 import '../../../core/constants/dimensions.dart';
+import '../../providers/discovery_provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
-class TodayInspirationScreen extends StatelessWidget {
+class TodayInspirationScreen extends ConsumerWidget {
   const TodayInspirationScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final discoveryState = ref.watch(discoveryProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     
     return Scaffold(
@@ -23,7 +27,11 @@ class TodayInspirationScreen extends StatelessWidget {
                 children: [
                   IconButton(
                     onPressed: () => context.pop(),
-                    icon: const Icon(Icons.arrow_back_ios),
+                    icon: Icon(
+                      Icons.chevron_left, 
+                      size: 32,
+                      color: isDark ? Colors.white : PinColors.textPrimary,
+                    ),
                   ),
                 ],
               ),
@@ -56,23 +64,17 @@ class TodayInspirationScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 32),
                     
-                    _buildInspirationCard(
-                      'All Over You with Patrick Church',
-                      'Your go-too guide to leveling up your style',
-                      'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&q=80',
-                    ),
-                    const SizedBox(height: 24),
-                    _buildInspirationCard(
-                      'It\'s fun dessert o\'clock',
-                      'Time to try banana sushi',
-                      'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&q=80',
-                    ),
-                    const SizedBox(height: 24),
-                    _buildInspirationCard(
-                      'Make your workspace pop',
-                      'Desk setups to boost your mood',
-                      'https://images.unsplash.com/photo-1497215728101-856f4ea42174?auto=format&fit=crop&q=80',
-                    ),
+                    if (discoveryState.isLoading && discoveryState.todayInspiration.isEmpty)
+                      const Center(child: CircularProgressIndicator(color: PinColors.pinterestRed))
+                    else
+                      ...discoveryState.todayInspiration.map((pin) => Padding(
+                        padding: const EdgeInsets.only(bottom: 24),
+                        child: _buildInspirationCard(
+                          pin.photographerName,
+                          pin.title ?? 'Aesthetic Inspiration',
+                          pin.imageUrl,
+                        ),
+                      )),
                     const SizedBox(height: 32),
                   ],
                 ),
@@ -89,8 +91,8 @@ class TodayInspirationScreen extends StatelessWidget {
       borderRadius: BorderRadius.circular(PinDimensions.cardRadius),
       child: Stack(
         children: [
-          Image.network(
-            imageUrl,
+          CachedNetworkImage(
+            imageUrl: imageUrl,
             width: double.infinity,
             height: 440,
             fit: BoxFit.cover,

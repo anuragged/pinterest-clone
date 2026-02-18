@@ -32,7 +32,7 @@ class BoardDetailScreen extends ConsumerWidget {
           elevation: 0,
           leading: IconButton(
             onPressed: () => context.pop(),
-            icon: const Icon(Icons.arrow_back, color: PinColors.iconDefault),
+            icon: const Icon(Icons.chevron_left, color: PinColors.iconDefault, size: 32),
           ),
         ),
         body: const Center(
@@ -59,7 +59,7 @@ class BoardDetailScreen extends ConsumerWidget {
             leading: IconButton(
               onPressed: () => context.pop(),
               icon:
-                  const Icon(Icons.arrow_back, color: PinColors.iconDefault),
+                  const Icon(Icons.chevron_left, color: PinColors.iconDefault, size: 32),
             ),
             actions: [
               IconButton(

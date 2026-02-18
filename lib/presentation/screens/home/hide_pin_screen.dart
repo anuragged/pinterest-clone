@@ -41,8 +41,8 @@ class HidePinScreen extends StatelessWidget {
         leading: IconButton(
           onPressed: () => Navigator.pop(context),
           icon: Icon(
-            Icons.arrow_back_ios,
-            size: 20,
+            Icons.chevron_left,
+            size: 32,
             color: isDark ? Colors.white : PinColors.textPrimary,
           ),
         ),

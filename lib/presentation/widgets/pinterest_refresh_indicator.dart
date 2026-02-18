@@ -26,6 +26,7 @@ class _PinterestRefreshIndicatorState extends State<PinterestRefreshIndicator>
   
   double _pullDistance = 0.0;
   bool _isRefreshing = false;
+  double _maxPullDistance = 0.0;
   
   static const double _threshold = 90.0;
   static const double _damping = 0.85;
@@ -60,6 +61,7 @@ class _PinterestRefreshIndicatorState extends State<PinterestRefreshIndicator>
         // We are overscrolling at the top
         setState(() {
           _pullDistance = -notification.metrics.pixels;
+          _maxPullDistance = math.max(_maxPullDistance, _pullDistance);
           _pullController.value = math.min(1.0, _pullDistance / _threshold);
         });
       } else if (notification.metrics.pixels >= 0 && _pullDistance > 0) {
@@ -68,17 +70,25 @@ class _PinterestRefreshIndicatorState extends State<PinterestRefreshIndicator>
           _pullController.value = 0;
         });
       }
-    } else if (notification is ScrollEndNotification) {
-      if (_pullDistance >= _threshold) {
+      
+      // If user released (no drag details) and we hit threshold, start refresh immediately
+      if (notification.dragDetails == null && _maxPullDistance >= _threshold) {
         _startRefresh();
-      } else if (_pullDistance > 0) {
+        _maxPullDistance = 0;
+      }
+    } else if (notification is ScrollEndNotification) {
+      if (_maxPullDistance >= _threshold) {
+        _startRefresh();
+      } else if (_pullDistance > 0 || _maxPullDistance > 0) {
         _cancelRefresh();
       }
+      _maxPullDistance = 0;
     }
     return false;
   }
 
   void _startRefresh() async {
+    if (_isRefreshing) return;
     setState(() => _isRefreshing = true);
     Haptics.medium();
 
@@ -95,14 +105,15 @@ class _PinterestRefreshIndicatorState extends State<PinterestRefreshIndicator>
     
     _rotationController.repeat();
     
-    // Minimum duration of 1.5s to ensure user sees the high-fidelity animation
+    // Minimum duration reduced to 800ms for a more immediate feel
     final startTime = DateTime.now();
     await widget.onRefresh();
     final endTime = DateTime.now();
     final elapsed = endTime.difference(startTime);
     
-    if (elapsed < const Duration(milliseconds: 1500)) {
-      await Future.delayed(const Duration(milliseconds: 1500) - elapsed);
+    const minDelay = Duration(milliseconds: 800);
+    if (elapsed < minDelay) {
+      await Future.delayed(minDelay - elapsed);
     }
     
     _finishRefresh();

@@ -5,7 +5,7 @@ class ApiConstants {
 
   // Pexels API
   static const String pexelsBaseUrl = 'https://api.pexels.com/v1';
-  static const String pexelsApiKey = 'YOUR_PEXELS_API_KEY'; // Replace with your key
+  static const String pexelsApiKey = '2STteFgvjIpv5h2U9Ef6hiQwSriYRFgukhOll3OpV6kk3DpGRkpdZCHo'; // Replace with your key
   static const int pexelsPerPage = 20;
 
   // Unsplash fallback
